@@ -1,0 +1,24 @@
+body { 
+    margin: 0;
+    padding: 0;
+    font-family: 'Roboto', sans-serif;
+    background-color: lightgrey;
+    overflow-x: hidden ;
+    height: 100vh;
+}
+
+.editor {
+    width: 100vw;
+    margin: 25px 25px;
+    padding: 20px;
+    background-color: #FFF;
+    border-radius: 4px;
+    position: relative;
+}
+
+.container {
+    display: flex;
+    justify-content: center;
+    height: 100vh;
+    justify-self: stretch;
+}
