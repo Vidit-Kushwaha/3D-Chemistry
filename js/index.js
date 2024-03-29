@@ -121,8 +121,8 @@ function loadMolecule() {
       var cid = urlParams.get("cid") || 217;
     }
 
-    document.getElementById("search").value = cid;
-    document.getElementById("display").value = style;
+    document.getElementById("search").value = cid || 217;
+    document.getElementById("display").value = style || "stick";
 
     if (glviewer === null) {
       glviewer = $3Dmol.createViewer("editor", {
