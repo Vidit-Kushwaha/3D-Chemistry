@@ -1,12 +1,118 @@
 var glviewer = null;
 
-var render = function () {
+$(document).ready(function () {
+  let inputQuery = document.getElementById("query");
+  let inputStyle = document.getElementById("style");
+  let inputModel = document.getElementById("model");
+  let inputToggle = document.getElementById("toggle");
+
+  if (inputQuery && inputStyle && inputModel && inputToggle) {
+
+    var validSpecs = $3Dmol.extend({}, atomSpec);
+    $3Dmol.extend(validSpecs, otherExtra);
+    loadMolecule();
+
+    function updateUrl(event) {
+      event.preventDefault();
+
+      const value = inputQuery.value;
+      const style = inputStyle.value;
+      const model = inputModel.value;
+
+      const newUrl = `?id=${value.trim()}&style=${style}&model=${model}`;
+
+      if (window.history && window.history.pushState) {
+        window.history.pushState({}, "", newUrl);
+      } else {
+        window.location.href = newUrl;
+      }
+      loadMolecule();
+    }
+
+    function labelToggle() {
+      inputToggle.addEventListener("change", (event) => {
+        const atoms = glviewer.getModel().selectedAtoms();
+        if (inputToggle.checked) {
+          inputToggle.title = "Hide Labels";
+          atoms.forEach((atom) => {
+            const label = getAtomLabel(atom);
+            atom._clickLabel = glviewer.addLabel(label, {
+              position: atom,
+              fontSize: 26,
+              backgroundColor: "black",
+              backgroundOpacity: 0.75,
+              alignment: "bottomCenter",
+            });
+          });
+        } else {
+          inputToggle.title = "Show Labels";
+          atoms.forEach((atom) => {
+            glviewer.removeLabel(atom._clickLabel);
+            atom._clickLabel = null;
+          });
+        }
+
+        glviewer.render();
+      });
+    }
+
+    function loadMolecule() {
+      try {
+        const queryString = window.location.search;
+
+        if (queryString) {
+          const paramsString = queryString.slice(1);
+
+          const urlParams = new URLSearchParams(paramsString);
+
+          var style = urlParams.get("style");
+          var id = urlParams.get("id");
+          var type = urlParams.get("model") || "sdf";
+        }
+
+        inputQuery.value = id;
+        inputStyle.value = style || "stick";
+        inputModel.value = type;
+
+        if (glviewer === null) {
+          glviewer = $3Dmol.createViewer("editor", {
+            defaultcolors: $3Dmol.rasmolElementColors,
+          });
+          glviewer.setBackgroundColor(0xffffff);
+        } else {
+          glviewer.clear();
+        }
+
+        const url = getFetchUrl(type, id);
+
+        if (type === "cid") {
+          type = "sdf";
+        }
+        if (style === "cartoon") {
+          style = { cartoon: { color: "spectrum" } };
+        }
+
+        $.get(url.replace('+',''), function (ret, txt, response) {
+          glviewer.addModel(ret, type);
+          processCommands(glviewer, style ? style : "stick");
+          glviewer.zoomTo();
+          glviewer.render();
+        }).fail(function () {
+          console.log("Failed to fetch " + url);
+        });
+      } catch (e) {
+        console.log(e);
+      }
+    }
+  }
+});
+
+function render() {
   glviewer.setStyle({}, { line: {} });
   processCommands(glviewer);
   glviewer.render();
-};
+}
 
-// Combine element, residue name and number (if available)
 function getAtomLabel(atom) {
   let label = atom.elem;
   if (atom.resn && atom.resi) {
@@ -108,97 +214,29 @@ function processCommands(viewer, style) {
   });
 }
 
-function loadMolecule() {
-  try {
-    const queryString = window.location.search;
+function getFetchUrl(type, value = 217) {
+  const pubchemBaseUrl =
+    "https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/";
+  const cactusBaseUrl = "https://cactus.nci.nih.gov/chemical/structure/";
+  const mmtfBaseUrl = "https://mmtf.rcsb.org/v1.0/full/";
+  const rcsbBaseUrl = "https://files.rcsb.org/view/";
 
-    if (queryString) {
-      const paramsString = queryString.slice(1);
-
-      const urlParams = new URLSearchParams(paramsString);
-
-      var style = urlParams.get("style");
-      var cid = urlParams.get("cid") || 217;
+  function constructUrl(src, value) {
+    switch (src) {
+      case "cid":
+        return pubchemBaseUrl + value + "/SDF?record_type=3d";
+      case "smiles":
+        return cactusBaseUrl + encodeURIComponent(value) + "/file?format=sdf";
+      case "mmtf":
+        return mmtfBaseUrl + value;
+      case "cif":
+        return rcsbBaseUrl + value + ".cif";
+      case "pdb":
+        return rcsbBaseUrl + value + ".pdb";
+      default:
+        return pubchemBaseUrl + 217 + "/SDF?record_type=3d";
     }
-
-    document.getElementById("search").value = cid || 217;
-    document.getElementById("display").value = style || "stick";
-
-    if (glviewer === null) {
-      glviewer = $3Dmol.createViewer("editor", {
-        defaultcolors: $3Dmol.rasmolElementColors,
-      });
-      glviewer.setBackgroundColor(0xffffff);
-    } else {
-      glviewer.clear();
-    }
-
-    var type = "sdf";
-    var url =
-      "https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/" +
-      cid +
-      "/SDF?record_type=3d";
-
-    $.get(url, function (ret, txt, response) {
-      glviewer.addModel(ret, type);
-      processCommands(glviewer, style ? style : "stick");
-      glviewer.zoomTo();
-      glviewer.render();
-    }).fail(function () {
-      console.log("Failed to fetch " + url);
-    });
-  } catch (e) {
-    console.log(e);
   }
+
+  return constructUrl(type, value.trim());
 }
-
-function updateUrl() {
-  event.preventDefault();
-
-  const cid = document.getElementById("search").value;
-  const style = document.getElementById("display").value;
-
-  const newUrl = `?cid=${cid}&style=${style}`;
-
-  if (window.history && window.history.pushState) {
-    window.history.pushState({}, "", newUrl);
-  } else {
-    window.location.href = newUrl;
-  }
-  loadMolecule();
-}
-
-function labelToggle() {
-  const toggle = document.getElementById("toggle");
-
-  toggle.addEventListener("change", (event) => {
-    const atoms = glviewer.getModel().selectedAtoms();
-    if (toggle.checked) {
-      toggle.title = "Hide Labels";
-      atoms.forEach((atom) => {
-        const label = getAtomLabel(atom);
-        atom._clickLabel = glviewer.addLabel(label, {
-          position: atom,
-          fontSize: 26,
-          backgroundColor: "black",
-          backgroundOpacity: 0.75,
-          alignment: "bottomCenter",
-        });
-      });
-    } else {
-      toggle.title = "Show Labels";
-      atoms.forEach((atom) => {
-        glviewer.removeLabel(atom._clickLabel);
-        atom._clickLabel = null;
-      });
-    }
-
-    glviewer.render();
-  });
-}
-
-$(document).ready(function () {
-  var validSpecs = $3Dmol.extend({}, atomSpec);
-  $3Dmol.extend(validSpecs, otherExtra);
-  loadMolecule();
-});

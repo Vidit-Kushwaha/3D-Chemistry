@@ -55,9 +55,13 @@ select {
     font-size: larger;
     display: block;
     margin: 10px auto;
+    color: white;
+    border: 0px;
+    border-radius: 10px;
+    background-color: #4CAF50;
   }
 
-  #display{
+  #style, #model{
     width: 100%;
     height: 100%;
     border: none;

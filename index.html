@@ -9,9 +9,9 @@
 
   <!-- 3Dmol.js -->
   <script src="https://3Dmol.org/build/3Dmol-min.js"></script>
-  <!-- ajax socket.io -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.6.2/socket.io.js"
-    integrity="sha512-jMNwWSmjje4fjYut9MBGKXw5FZA6D67NHAuC9szpjbbjg51KefquNfvn4DalCbGfkcv/jHsHnPo1o47+8u4biA=="
+  <!-- ajax  -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"
+    integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g=="
     crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <!-- jQuery -->
   <script src="https://code.jquery.com/jquery-3.7.1.min.js"
@@ -31,17 +31,31 @@
       </div>
       <div>
         <form id="myForm" onsubmit="updateUrl()">
-          <label for="search">CID Model:</label>
-          <input type="text" id="search" name="cid" placeholder="Enter CID:" title="CID is PubChem Compound Identification number">
-          <label for="display">Display Style:</label>
-          <select id="display" name="style">
-            <!-- <option value="cartoon">Cartoon</option> -->
-            <option value="stick">Stick</option>
-            <option value="sphere">Sphere</option>
-            <option value="line">Line</option>
-            <option value="cross">Cross</option>
-            <!-- <option value="surface">Surface</option> -->
-          </select>
+          <div>
+            <label for="model">Model:</label>
+            <select id="model" name="model">
+              <option value="cid">CID</option>
+              <option value="pdb">PDB</option>
+              <option value="smiles">Smiles</option>
+              <option value="cif">CIF</option>
+              <option value="mmtf">MMTF</option>
+            </select>
+          </div>
+          <div>
+            <label for="query">Value</label>
+            <input type="text" id="query" name="id" placeholder="value" title="Identification value">
+          </div>
+          <div>
+            <label for="style">Display Style:</label>
+            <select id="style" name="style">
+              <option value="cartoon">Cartoon</option>
+              <option value="stick">Stick</option>
+              <option value="sphere">Sphere</option>
+              <option value="line">Line</option>
+              <option value="cross">Cross</option>
+              <option value="surface">Surface</option>
+            </select>
+          </div>
           <div style="display: flex; align-items: center;">
             <label for="toggle">Show label:</label>
             <label class="toggle-switch" id="toggle-switch">
