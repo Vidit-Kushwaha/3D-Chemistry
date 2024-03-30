@@ -65,13 +65,13 @@ $(document).ready(function () {
 
           const urlParams = new URLSearchParams(paramsString);
 
-          var style = urlParams.get("style");
-          var id = urlParams.get("id");
+          var style = urlParams.get("style") || "stick";
+          var id = urlParams.get("id") || "";
           var type = urlParams.get("model") || "sdf";
         }
 
         inputQuery.value = id;
-        inputStyle.value = style || "stick";
+        inputStyle.value = style;
         inputModel.value = type;
 
         if (glviewer === null) {
