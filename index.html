@@ -5,7 +5,7 @@
   <title>3D-Chemistry</title>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-
+  <link rel="icon" href="public/favicon.ico" type="image/x-icon">
 
   <!-- 3Dmol.js -->
   <script src="https://3Dmol.org/build/3Dmol-min.js"></script>
@@ -26,52 +26,54 @@
 <body>
   <div class="header">
     <div class="menu">
-      <div>
-        <h1>3D Chemistry</h1>
-      </div>
-      <div>
-        <form id="myForm" onsubmit="updateUrl()">
-          <div>
-            <label for="model">Model:</label>
-            <select id="model" name="model">
-              <option value="cid">CID</option>
-              <option value="pdb">PDB</option>
-              <option value="smiles">Smiles</option>
-              <option value="cif">CIF</option>
-              <option value="mmtf">MMTF</option>
-            </select>
-          </div>
-          <div>
-            <label for="query">Value</label>
-            <input type="text" id="query" name="id" placeholder="value" title="Identification value">
-          </div>
-          <div>
-            <label for="style">Display Style:</label>
-            <select id="style" name="style">
-              <option value="cartoon">Cartoon</option>
-              <option value="stick">Stick</option>
-              <option value="sphere">Sphere</option>
-              <option value="line">Line</option>
-              <option value="cross">Cross</option>
-              <option value="surface">Surface</option>
-            </select>
-          </div>
-          <div style="display: flex; align-items: center;">
-            <label for="toggle">Show label:</label>
-            <label class="toggle-switch" id="toggle-switch">
-              <input type="checkbox" id="toggle" onclick="labelToggle()">
-              <span class="slider"></span>
-            </label>
-          </div>
-          <button id="load" type="submit">Click to build</button>
-        </form>
-      </div>
+      <h1>3D Chemistry</h1>
+      <form id="myForm">
+        <div>
+          <label for="model">Model:</label>
+          <select id="model" name="model">
+            <option value="file">File</option>
+            <option value="cid">CID</option>
+            <option value="pdb">PDB</option>
+            <option value="smiles">Smiles</option>
+            <option value="cif">CIF</option>
+            <option value="mmtf">MMTF</option>
+          </select>
+        </div>
+        <div class="subElement" hidden>
+          <label for="query">Value</label>
+          <input type="text" id="query" name="id" placeholder="value" title="Identification value">
+        </div>
+        <div id="uploadContainer" class="subElement" hidden>
+          <label for="file">Upload File:</label>
+          <input type="file" id="file" accept=".pdb,.cjson">
+        </div>
+        <div>
+          <label for="style">Display Style:</label>
+          <select id="style" name="style">
+            <option value="cartoon">Cartoon</option>
+            <option value="stick">Stick</option>
+            <option value="sphere">Sphere</option>
+            <option value="line">Line</option>
+            <option value="cross">Cross</option>
+            <option value="surface">Surface</option>
+          </select>
+        </div>
+        <div style="display: flex; align-items: center;">
+          <label for="toggle">Show label:</label>
+          <label class="toggle-switch" id="toggle-switch">
+            <input type="checkbox" id="toggle">
+            <span class="slider"></span>
+          </label>
+        </div>
+        <button id="load" type="submit">Click to build</button>
+      </form>
     </div>
     <div class="container">
       <div class="editor" id="editor">
       </div>
     </div>
   </div>
+  </section>
 </body>
 
 </html>

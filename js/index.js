@@ -1,18 +1,28 @@
 var glviewer = null;
+var fileData = null;
+var labels = [];
 
 $(document).ready(function () {
   let inputQuery = document.getElementById("query");
   let inputStyle = document.getElementById("style");
   let inputModel = document.getElementById("model");
   let inputToggle = document.getElementById("toggle");
+  let inputFile = document.getElementById("file");
+  let element = document.getElementsByClassName("subElement");
 
-  if (inputQuery && inputStyle && inputModel && inputToggle) {
-
+  if (
+    inputQuery &&
+    inputStyle &&
+    inputModel &&
+    inputToggle &&
+    inputFile &&
+    element
+  ) {
     var validSpecs = $3Dmol.extend({}, atomSpec);
     $3Dmol.extend(validSpecs, otherExtra);
-    loadMolecule();
+    loadMolecule(fileData || "");
 
-    function updateUrl(event) {
+    $("#myForm").submit(function (event) {
       event.preventDefault();
 
       const value = inputQuery.value;
@@ -26,35 +36,50 @@ $(document).ready(function () {
       } else {
         window.location.href = newUrl;
       }
-      loadMolecule();
-    }
+      loadMolecule(fileData || "");
+    });
 
-    function labelToggle() {
-      inputToggle.addEventListener("change", (event) => {
-        const atoms = glviewer.getModel().selectedAtoms();
-        if (inputToggle.checked) {
-          inputToggle.title = "Hide Labels";
-          atoms.forEach((atom) => {
-            const label = getAtomLabel(atom);
-            atom._clickLabel = glviewer.addLabel(label, {
-              position: atom,
-              fontSize: 26,
-              backgroundColor: "black",
-              backgroundOpacity: 0.75,
-              alignment: "bottomCenter",
-            });
-          });
-        } else {
-          inputToggle.title = "Show Labels";
-          atoms.forEach((atom) => {
-            glviewer.removeLabel(atom._clickLabel);
-            atom._clickLabel = null;
-          });
-        }
-
+    $("#toggle").change(function (event) {
+      if (inputToggle.checked) {
+        addLabels();
         glviewer.render();
-      });
-    }
+      } else {
+        labels.forEach((atom) => {
+          glviewer.removeLabel(atom._clickLabel);
+          atom._clickLabel = null;
+        });
+      }
+    });
+
+    $("#file").change(function (event) {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          const data = e.target.result;
+          const result = { data: data, ext: file.name.split(".").pop() };
+          fileData = result;
+          loadMolecule(result);
+        };
+        reader.readAsText(file);
+      }
+    });
+
+    $("#model").change(function (event) {
+      const model = event.target.value;
+      if (model === "file") {
+        element[1].removeAttribute("hidden");
+        element[0].setAttribute("hidden", true);
+      } else {
+        element[1].setAttribute("hidden", true);
+        element[0].removeAttribute("hidden");
+      }
+      if (window.history && window.history.pushState) {
+        window.history.pushState({}, "", `?model=${model}`);
+      } else {
+        window.location.href = `?model=${model}`;
+      }
+    });
 
     function loadMolecule() {
       try {
@@ -65,14 +90,22 @@ $(document).ready(function () {
 
           const urlParams = new URLSearchParams(paramsString);
 
-          var style = urlParams.get("style") || "stick";
-          var id = urlParams.get("id") || "";
-          var type = urlParams.get("model") || "sdf";
+          var style = urlParams.get("style");
+          var id = urlParams.get("id");
+          var model = urlParams.get("model") ;
         }
 
-        inputQuery.value = id;
-        inputStyle.value = style;
-        inputModel.value = type;
+        inputQuery.value = id || "";
+        inputStyle.value = style || "";
+        inputModel.value = model || "";
+
+        if (model === "file") {
+          element[1].removeAttribute("hidden");
+          element[0].setAttribute("hidden", true);
+        } else if(model == "cid" || model == "smiles" || model == "mmtf" || model == "cif" || model == "pdb") {
+          element[1].setAttribute("hidden", true);
+          element[0].removeAttribute("hidden");
+        }
 
         if (glviewer === null) {
           glviewer = $3Dmol.createViewer("editor", {
@@ -83,23 +116,38 @@ $(document).ready(function () {
           glviewer.clear();
         }
 
-        const url = getFetchUrl(type, id);
-
-        if (type === "cid") {
-          type = "sdf";
+        if (model === "cid") {
+          model = "sdf";
         }
         if (style === "cartoon") {
           style = { cartoon: { color: "spectrum" } };
         }
 
-        $.get(url.replace('+',''), function (ret, txt, response) {
-          glviewer.addModel(ret, type);
+        if (model === "file" && fileData) {
+          const { data, ext } = fileData;
+          if (ext === "cjson") {
+            const parsedAtoms = parseChemicalJson(data);
+            const m = glviewer.addModel();
+            m.addAtoms(parsedAtoms);
+          } else if (ext === "pdb") {
+            glviewer.addModel(data, ext);
+          }
           processCommands(glviewer, style ? style : "stick");
           glviewer.zoomTo();
           glviewer.render();
-        }).fail(function () {
-          console.log("Failed to fetch " + url);
-        });
+        } else {
+          const url = getFetchUrl(model, id);
+          $.get(url.replace("+", ""), function (ret, txt, response) {
+            glviewer.addModel(ret, model);
+            processCommands(glviewer, style ? style : "stick");
+            glviewer.zoomTo();
+            glviewer.render();
+          }).fail(function () {
+            console.log("Failed to fetch " + url);
+          });
+        }
+ 
+  
       } catch (e) {
         console.log(e);
       }
@@ -108,7 +156,7 @@ $(document).ready(function () {
 });
 
 function render() {
-  glviewer.setStyle({}, { line: {} });
+  glviewer.setStyle({});
   processCommands(glviewer);
   glviewer.render();
 }
@@ -239,4 +287,92 @@ function getFetchUrl(type, value = 217) {
   }
 
   return constructUrl(type, value.trim());
+}
+
+function parseChemicalJson(jsonData) {
+  const data = JSON.parse(jsonData);
+
+  if (!data || !data.atoms || !data.atoms.coords || !data.atoms.elements) {
+    throw new Error("Invalid chemical JSON format. Missing required fields.");
+  }
+
+  const atoms = [];
+  const coords = data.atoms.coords["3d"];
+  const elements = data.atoms.elements.number;
+  const formalCharges = data.atoms.formalCharges || [];
+  const partialCharges = data.partialCharges?.Gasteiger || [];
+
+  for (let i = 0; i < coords.length / 3; i++) {
+    const atom = {
+      x: coords[i * 3],
+      y: coords[i * 3 + 1],
+      z: coords[i * 3 + 2],
+      elem: getElementalSymbol(elements[i]),
+      formalCharge: formalCharges[i] || 0,
+      partialCharge: partialCharges[i] || 0,
+      bonds: [],
+      bondOrder: [],
+    };
+    atoms.push(atom);
+  }
+
+  const bonds = data.bonds.connections.index;
+  const bondOrders = data.bonds.order;
+
+  for (let i = 0; i < bonds.length; i += 2) {
+    const atom1Index = bonds[i];
+    const atom2Index = bonds[i + 1];
+    const order = bondOrders[i / 2];
+
+    atoms[atom1Index].bonds.push(atom2Index);
+    atoms[atom1Index].bondOrder.push(order);
+
+    atoms[atom2Index].bonds.push(atom1Index);
+    atoms[atom2Index].bondOrder.push(order);
+  }
+
+  return atoms;
+}
+
+function getElementalSymbol(elementNumber) {
+  const elements = [
+    "X",
+    "H",
+    "He",
+    "Li",
+    "Be",
+    "B",
+    "C",
+    "N",
+    "O",
+    "F",
+    "Ne",
+    "Na",
+    "Mg",
+    "Al",
+    "Si",
+    "P",
+    "S",
+    "Cl",
+    "Ar",
+  ];
+  return elementNumber >= 0 && elementNumber < elements.length
+    ? elements[elementNumber]
+    : "X";
+}
+
+function addLabels() {
+  const atoms = glviewer.getModel().selectedAtoms();
+
+  atoms.forEach((atom) => {
+    const label = getAtomLabel(atom);
+    atom._clickLabel = glviewer.addLabel(label, {
+      position: atom,
+      fontSize: 26,
+      backgroundColor: "black",
+      backgroundOpacity: 0.9,
+      alignment: "bottomCenter",
+    });
+    labels.push(atom);
+  });
 }
