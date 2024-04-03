@@ -64,6 +64,7 @@ select {
     border: 0px;
     border-radius: 10px;
     background-color: #4CAF50;
+    cursor: pointer;
   }
 
   #style, #model {
@@ -74,6 +75,7 @@ select {
     border-radius: 4px;
     padding: 10px;
     font-size: 1.2em;
+    cursor: pointer;
   }
 
   label {
@@ -151,10 +153,20 @@ select {
   #uploadContainer {
     margin-bottom: 20px;
 }
-/* #uploadContainer label {
-    display: block;
-    margin-bottom: 5px;
-} */
+
+#github {
+    position: absolute;
+    display: flex;
+    z-index: 10;
+    bottom: 10px;
+    left: 0px;
+    right: 0px;
+    justify-content: center;
+    font-size: large;
+    background-color: #f5f5f5;
+    opacity: 0.8;
+}
+
 #uploadPdbContainer input[type="file"] {
     padding: 7px;
     border-radius: 3px;
